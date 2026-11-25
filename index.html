@@ -17,10 +17,10 @@ body{background:var(--navy);color:#fff;font-family:Nunito,system-ui,sans-serif;o
 .layer{position:fixed;inset:0;z-index:1}
 
 /* --- Pantalla de espera --- */
-#welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.6vh;padding-bottom:8vh;text-align:center;transition:opacity .5s}
-#welcome img{width:clamp(110px,22vh,200px);height:clamp(110px,22vh,200px);object-fit:cover;border-radius:22%;box-shadow:0 0 0 4px var(--gold),0 18px 40px rgba(0,0,0,.35)}
+#welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.8vh;padding-bottom:9vh;text-align:center;transition:opacity .5s}
+#welcome img{width:clamp(90px,18vh,180px);height:clamp(90px,18vh,180px);object-fit:cover;border-radius:22%;box-shadow:0 0 0 4px var(--gold),0 18px 40px rgba(0,0,0,.35)}
 .pre{font-size:clamp(16px,2.6vh,22px);font-weight:600;letter-spacing:.02em;color:var(--aqua)}
-.big-title{font-family:"Mountains of Christmas",cursive;font-weight:700;font-size:clamp(48px,13vh,128px);line-height:.95;color:var(--gold);text-shadow:0 6px 30px rgba(0,0,0,.35);padding:0 4vw}
+.big-title{font-family:"Mountains of Christmas",cursive;font-weight:700;font-size:clamp(44px,12vh,120px);line-height:.95;color:var(--gold);text-shadow:0 6px 30px rgba(0,0,0,.35);padding:0 4vw}
 .sub{font-size:clamp(18px,3.4vh,30px);font-weight:600;opacity:.85}
 
 /* --- Pantalla en vivo --- */
@@ -55,7 +55,34 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-
 #start{background:var(--red);border-color:var(--red);font-weight:800;padding:0 20px}
 .sq{width:44px;padding:0}
 #msg{position:fixed;top:1.5vh;left:50%;transform:translateX(-50%);z-index:4;color:var(--gold);font-weight:600;font-size:15px;text-align:center;max-width:90vw}
-@media (prefers-reduced-motion:reduce){#snow{display:none}body.on .dot{animation:none}}
+
+/* --- Espera: temporizador y animación --- */
+.cd-label{font-size:clamp(15px,2.6vh,22px);font-weight:700;color:var(--aqua);margin-top:.6vh;display:none}
+.cd{display:none;gap:clamp(10px,1.6vw,22px);align-items:flex-start}
+body.counting .cd{display:flex}body.counting .cd-label{display:block}body.counting .sub{display:none}
+.cd>div{display:flex;flex-direction:column;align-items:center;gap:.6vh;min-width:clamp(80px,14vh,150px);padding:1.4vh 1vw;border-radius:18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16)}
+.cd b{font-size:clamp(44px,12vh,110px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.cd span{font-size:clamp(11px,1.8vh,15px);font-weight:600;color:#cfe0f5}
+.cd .sep{background:none;border:0;min-width:0;padding:1.4vh 0;font-size:clamp(44px,12vh,110px);font-weight:800;line-height:1;color:var(--gold)}
+body.final .cd b{color:var(--gold);animation:pop 1s infinite}
+@keyframes pop{0%{transform:scale(1.18)}40%{transform:scale(1)}}
+.tree{position:fixed;bottom:2vh;height:min(46vh,30vw);z-index:1;pointer-events:none;transition:opacity .5s}
+.tree svg{height:100%;width:auto;display:block}
+.tree.l{left:3vw}.tree.r{right:3vw;transform:scaleX(-1)}
+body.started .tree{opacity:0}
+.bulb{animation:blink 1.6s infinite ease-in-out}
+.bulb:nth-child(3n){animation-delay:.5s}.bulb:nth-child(3n+1){animation-delay:1s}
+@keyframes blink{50%{opacity:.25}}
+.star{transform-box:fill-box;transform-origin:center;animation:glow 2.4s infinite ease-in-out}
+@keyframes glow{50%{transform:scale(1.18);opacity:.8}}
+#shoot{position:fixed;top:12vh;left:-20vw;width:18vw;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,#fff);z-index:0;opacity:0;animation:shoot 9s 3s infinite linear}
+@keyframes shoot{0%{transform:translate(0,0) rotate(12deg);opacity:0}3%{opacity:1}12%{transform:translate(70vw,15vh) rotate(12deg);opacity:0}100%{opacity:0}}
+body.started #shoot{display:none}
+#timer{display:flex;align-items:center;gap:6px}
+#timer input{width:64px;font:600 15px Nunito,sans-serif;min-height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;padding:0 8px;color-scheme:dark}
+#timer select{padding:0 8px}
+@media (max-height:560px){.tree{display:none}}
+@media (prefers-reduced-motion:reduce){#snow,#shoot{display:none}body.on .dot,.bulb,.star,body.final .cd b{animation:none}}
 </style>
 </head>
 <body>
@@ -65,10 +92,39 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-
   <path d="M0 95 C 260 65 520 105 760 80 C 960 60 1120 90 1280 75 L1280 160 L0 160 Z" fill="#7fd6dc" opacity=".22"/>
 </svg>
 
+<div id="shoot" aria-hidden="true"></div>
+<div class="tree l"><svg viewBox="0 0 200 300" aria-hidden="true">
+  <rect x="88" y="250" width="24" height="34" rx="3" fill="#7a4a2a"/>
+  <polygon points="100,40 40,130 160,130" fill="#1f8a5b"/>
+  <polygon points="100,85 25,195 175,195" fill="#18774d"/>
+  <polygon points="100,140 10,258 190,258" fill="#12643f"/>
+  <path d="M58 118 Q100 138 146 112 M40 182 Q100 206 164 176 M24 242 Q100 268 178 236" stroke="#ffd23f" stroke-width="3" fill="none" opacity=".8"/>
+  <g><circle class="bulb" cx="70" cy="122" r="6" fill="#ff4d5e"/><circle class="bulb" cx="100" cy="130" r="6" fill="#8ee6ec"/><circle class="bulb" cx="130" cy="119" r="6" fill="#ffd23f"/>
+  <circle class="bulb" cx="55" cy="188" r="6" fill="#ffd23f"/><circle class="bulb" cx="88" cy="198" r="6" fill="#ff4d5e"/><circle class="bulb" cx="122" cy="196" r="6" fill="#8ee6ec"/><circle class="bulb" cx="152" cy="181" r="6" fill="#ff4d5e"/>
+  <circle class="bulb" cx="40" cy="247" r="6" fill="#8ee6ec"/><circle class="bulb" cx="75" cy="258" r="6" fill="#ffd23f"/><circle class="bulb" cx="112" cy="259" r="6" fill="#ff4d5e"/><circle class="bulb" cx="150" cy="248" r="6" fill="#ffd23f"/></g>
+  <polygon class="star" points="100,4 108,24 129,24 112,37 118,57 100,45 82,57 88,37 71,24 92,24" fill="#ffd23f"/>
+  <rect x="34" y="262" width="34" height="26" rx="3" fill="#ff4d5e"/><rect x="48" y="262" width="6" height="26" fill="#ffd23f"/>
+  <rect x="130" y="266" width="30" height="22" rx="3" fill="#8ee6ec"/><rect x="142" y="266" width="6" height="22" fill="#fff"/>
+</svg></div>
+<div class="tree r"><svg viewBox="0 0 200 300" aria-hidden="true">
+  <rect x="88" y="250" width="24" height="34" rx="3" fill="#7a4a2a"/>
+  <polygon points="100,40 40,130 160,130" fill="#1f8a5b"/>
+  <polygon points="100,85 25,195 175,195" fill="#18774d"/>
+  <polygon points="100,140 10,258 190,258" fill="#12643f"/>
+  <path d="M58 118 Q100 138 146 112 M40 182 Q100 206 164 176 M24 242 Q100 268 178 236" stroke="#ffd23f" stroke-width="3" fill="none" opacity=".8"/>
+  <g><circle class="bulb" cx="70" cy="122" r="6" fill="#ff4d5e"/><circle class="bulb" cx="100" cy="130" r="6" fill="#8ee6ec"/><circle class="bulb" cx="130" cy="119" r="6" fill="#ffd23f"/>
+  <circle class="bulb" cx="55" cy="188" r="6" fill="#ffd23f"/><circle class="bulb" cx="88" cy="198" r="6" fill="#ff4d5e"/><circle class="bulb" cx="122" cy="196" r="6" fill="#8ee6ec"/><circle class="bulb" cx="152" cy="181" r="6" fill="#ff4d5e"/>
+  <circle class="bulb" cx="40" cy="247" r="6" fill="#8ee6ec"/><circle class="bulb" cx="75" cy="258" r="6" fill="#ffd23f"/><circle class="bulb" cx="112" cy="259" r="6" fill="#ff4d5e"/><circle class="bulb" cx="150" cy="248" r="6" fill="#ffd23f"/></g>
+  <polygon class="star" points="100,4 108,24 129,24 112,37 118,57 100,45 82,57 88,37 71,24 92,24" fill="#ffd23f"/>
+  <rect x="34" y="262" width="34" height="26" rx="3" fill="#ff4d5e"/><rect x="48" y="262" width="6" height="26" fill="#ffd23f"/>
+  <rect x="130" y="266" width="30" height="22" rx="3" fill="#8ee6ec"/><rect x="142" y="266" width="6" height="22" fill="#fff"/>
+</svg></div>
 <section id="welcome" class="layer">
   <img src="logo.jpg" alt="Escudo del Instituto Tlaquepaque">
   <div class="pre">Instituto Tlaquepaque presenta</div>
   <div class="big-title">Caroling Chill Festival</div>
+  <div class="cd-label">Comenzamos en · Starting in</div>
+  <div class="cd" role="timer"><div><b id="cdM">00</b><span>minutos</span></div><div class="sep">:</div><div><b id="cdS">10</b><span>segundos</span></div></div>
   <div class="sub" id="welcomeSub">Subtítulos en español en vivo · Live Spanish captions</div>
 </section>
 
@@ -100,6 +156,8 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-
   <button id="toggleOrig">Ocultar original</button>
   <button id="clear">Limpiar</button>
   <button id="fs">Pantalla completa</button>
+  <button id="wait">Pantalla de espera</button>
+  <span id="timer"><input id="tAmt" type="number" min="1" max="120" value="10" aria-label="Duración del temporizador"><select id="tUnit" aria-label="Unidad"><option value="1">seg</option><option value="60">min</option></select><button id="tGo">Cuenta regresiva</button></span>
 </nav>
 
 <script>
@@ -197,6 +255,7 @@ function startRec(){
 }
 function start(){
   if(!SR)return;
+  if(typeof cancelCd==="function"&&cdT)cancelCd();
   running=true;document.body.classList.add("on","started");$("start").textContent="■ Detener";
   msg.textContent="";labels();prepNative();startRec();wake();
 }
@@ -228,6 +287,26 @@ document.addEventListener("keydown",e=>{
 let idleT;function wake(){document.body.classList.remove("idle");clearTimeout(idleT);idleT=setTimeout(()=>document.body.classList.add("idle"),4000)}
 ["mousemove","keydown","touchstart","click"].forEach(ev=>addEventListener(ev,wake));wake();
 labels();
+
+
+/* ---------- Temporizador antes de iniciar ---------- */
+let cdEnd=0,cdT=null;
+const tAmt=$("tAmt"),tUnit=$("tUnit");
+tAmt.value=store.get("tr_tamt","10");tUnit.value=store.get("tr_tunit","1");
+const pad=n=>String(n).padStart(2,"0");
+function drawCd(sec){$("cdM").textContent=pad(Math.floor(sec/60));$("cdS").textContent=pad(sec%60);document.body.classList.toggle("final",sec<=10&&sec>0)}
+function cancelCd(){clearInterval(cdT);cdT=null;document.body.classList.remove("counting","final");$("tGo").textContent="Cuenta regresiva"}
+function startCd(){
+  if(cdT){cancelCd();return}
+  const secs=Math.max(1,Math.round((+tAmt.value||10)*(+tUnit.value)));
+  store.set("tr_tamt",tAmt.value);store.set("tr_tunit",tUnit.value);
+  if(running)stop();document.body.classList.remove("started");
+  cdEnd=Date.now()+secs*1000;document.body.classList.add("counting");$("tGo").textContent="Cancelar cuenta";drawCd(secs);
+  cdT=setInterval(()=>{const left=Math.ceil((cdEnd-Date.now())/1000);
+    if(left<=0){cancelCd();start()}else drawCd(left)},200);
+}
+$("tGo").onclick=startCd;
+$("wait").onclick=()=>{cancelCd();if(running)stop();document.body.classList.remove("started")};
 
 /* ---------- Nieve ---------- */
 const cv=$("snow"),cx=cv.getContext("2d");let flakes=[];
