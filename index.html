@@ -81,6 +81,16 @@ body.started #shoot{display:none}
 #timer{display:flex;align-items:center;gap:6px}
 #timer input{width:64px;font:600 15px Nunito,sans-serif;min-height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;padding:0 8px;color-scheme:dark}
 #timer select{padding:0 8px}
+
+body.counting #welcome{gap:1.2vh;padding-bottom:6vh}
+body.counting #welcome img{width:clamp(60px,11vh,110px);height:clamp(60px,11vh,110px)}
+body.counting .big-title{font-size:clamp(36px,8vh,84px)}
+body.counting .cd-label{font-size:clamp(18px,3.6vh,32px)}
+body.counting .cd>div:not(.sep){min-width:clamp(130px,min(30vh,22vw),300px);padding:1.6vh 1.4vw;border-radius:24px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.22)}
+body.counting .cd b,body.counting .cd .sep{font-size:clamp(70px,min(27vh,17vw),260px)}
+body.counting .cd .sep{padding-top:1.6vh;min-width:0}
+body.counting .tree{height:min(36vh,22vw)}
+body.counting .cd span{font-size:clamp(14px,2.6vh,24px)}
 @media (max-height:560px){.tree{display:none}}
 @media (prefers-reduced-motion:reduce){#snow,#shoot{display:none}body.on .dot,.bulb,.star,body.final .cd b{animation:none}}
 </style>
