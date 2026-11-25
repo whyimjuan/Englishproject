@@ -165,6 +165,7 @@ body.counting .cd span{font-size:clamp(14px,2.6vh,24px)}
   <button id="bigger" class="sq" aria-label="Letra más grande">A+</button>
   <button id="toggleOrig">Ocultar original</button>
   <button id="clear">Limpiar</button>
+  <select id="mic" aria-label="Micrófono" style="max-width:220px"><option value="">Micrófono predeterminado</option></select>
   <button id="fs">Pantalla completa</button>
   <button id="wait">Pantalla de espera</button>
   <span id="timer"><input id="tAmt" type="number" min="1" max="120" value="10" aria-label="Duración del temporizador"><select id="tUnit" aria-label="Unidad"><option value="1">seg</option><option value="60">min</option></select><button id="tGo">Cuenta regresiva</button></span>
@@ -205,17 +206,19 @@ async function prepNative(){
       monitor(){}});
   }catch(e){native=null}
 }
+async function viaGoogle(text,s,t){
+  const r=await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${s}&tl=${t}&dt=t&q=${encodeURIComponent(text)}`);
+  const j=await r.json();return j[0].map(x=>x[0]).join("");
+}
 async function translate(text){
   text=text.trim();if(!text)return"";
   const s=code(from),t=code(to);
   if(s===t)return text;
   const k=s+t+text;if(cache.has(k))return cache.get(k);
   let out="";
-  if(native){try{out=await native.translate(text)}catch{}}
-  if(!out){try{
-    const r=await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${s}&tl=${t}&dt=t&q=${encodeURIComponent(text)}`);
-    const j=await r.json();out=j[0].map(x=>x[0]).join("");
-  }catch{}}
+  /* 1) Google (el más preciso)  2) traductor integrado de Chrome  3) MyMemory */
+  try{out=await viaGoogle(text,s,t)}catch{}
+  if(!out&&native){try{out=await native.translate(text)}catch{}}
   if(!out){try{
     const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${s}|${t}`);
     const j=await r.json();out=j.responseData.translatedText||"";
@@ -226,10 +229,34 @@ async function translate(text){
   return out;
 }
 
+/* ---------- Micrófono ---------- */
+const micSel=$("mic");let micStream=null;
+async function listMics(){
+  try{
+    const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audioinput");
+    const saved=store.get("tr_mic","");
+    micSel.innerHTML='<option value="">Micrófono predeterminado</option>'+devs.filter(d=>d.deviceId&&d.deviceId!=="default").map((d,i)=>{
+      const o=document.createElement("option");o.value=d.deviceId;o.textContent=d.label||`Micrófono ${i+1}`;return o.outerHTML}).join("");
+    if([...micSel.options].some(o=>o.value===saved))micSel.value=saved;
+  }catch{}
+}
+async function openMic(){
+  if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}
+  try{
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:micSel.value?{exact:micSel.value}:undefined,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    if(micSel.options.length<2||!micSel.options[1].textContent.trim()||/^Micrófono \d/.test(micSel.options[1]?.textContent||""))await listMics();
+  }catch(e){micStream=null}
+}
+micSel.onchange=async()=>{store.set("tr_mic",micSel.value);if(running){await openMic();if(rec){rec.onend=null;try{rec.stop()}catch{}}startRec()}};
+listMics();
+
 /* ---------- Reconocimiento de voz ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let rec=null,running=false,interimTimer=null,lastInterim="",seq=0,prevO="",prevT="";
 if(!SR)msg.textContent="Este navegador no reconoce voz. Abre la página en Google Chrome o Microsoft Edge (computadora).";
+/* solo se ignoran muletillas sueltas; cualquier palabra real se muestra */
+const FILLER=/^\s*(u+h+|u+m+|e+r+m*|a+h+|h+m+|m+h*m+|e+h+)[\s.,!?…-]*$/i;
+const best=r=>{let b=r[0];for(let k=1;k<r.length;k++)if((r[k].confidence||0)>(b.confidence||0))b=r[k];return b.transcript};
 function addHistory(tr){
   const d=document.createElement("div");d.className="line";d.textContent=tr;
   hist.appendChild(d);while(hist.children.length>1)hist.firstChild.remove();
@@ -237,40 +264,47 @@ function addHistory(tr){
 function show(o,tr,interim){orig.textContent=o?`“${o}”`:"";live.textContent=tr;live.classList.toggle("interim",!!interim)}
 function startRec(){
   if(!SR)return;
-  rec=new SR();rec.lang=from.value;rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
+  rec=new SR();rec.lang=from.value;rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=3;
   rec.onresult=async e=>{
     let interim="";
     for(let i=e.resultIndex;i<e.results.length;i++){
-      const r=e.results[i],txt=r[0].transcript;
+      const r=e.results[i];
       if(r.isFinal){
-        if(txt.trim().length<4)continue;
+        const txt=best(r).trim();
+        if(!txt||FILLER.test(txt))continue;
         clearTimeout(interimTimer);lastInterim="";++seq;
         const tr=await translate(txt);
         if(prevT)addHistory(prevT);
         show(txt,tr,false);prevO=txt;prevT=tr;
-      }else interim+=txt;
+      }else interim+=r[0].transcript;
     }
-    if(interim.trim().length>3){
-      orig.textContent=`“${interim}”`;
+    if(interim.trim()&&!FILLER.test(interim)){
+      orig.textContent=`“${interim.trim()}”`;
       lastInterim=interim;clearTimeout(interimTimer);
-      interimTimer=setTimeout(async()=>{const q=lastInterim,my=seq;const tr=await translate(q);if(my===seq&&q===lastInterim)show(q,tr,true)},450);
+      interimTimer=setTimeout(async()=>{const q=lastInterim,my=seq;const tr=await translate(q);if(my===seq&&q===lastInterim)show(q.trim(),tr,true)},350);
     }
   };
   rec.onerror=e=>{
     if(e.error==="not-allowed"||e.error==="service-not-allowed"){msg.textContent="Permiso de micrófono denegado. Actívalo en el candado de la barra de direcciones.";stop()}
     else if(e.error==="network")msg.textContent="Sin conexión con el servicio de voz; reintentando…";
+    else if(e.error==="audio-capture")msg.textContent="No se encontró el micrófono. Revisa que esté conectado.";
   };
-  rec.onend=()=>{if(running)setTimeout(()=>{try{startRec()}catch{}},250)};
-  try{rec.start()}catch{}
+  /* Chrome corta la escucha cada cierto tiempo: se reinicia al instante para no perder palabras */
+  rec.onend=()=>{if(running){try{startRec()}catch{setTimeout(()=>{try{startRec()}catch{}},300)}}};
+  const track=micStream&&micStream.getAudioTracks()[0];
+  try{track&&track.readyState==="live"?rec.start(track):rec.start()}catch{try{rec.start()}catch{}}
 }
-function start(){
+async function start(){
   if(!SR)return;
   if(typeof cancelCd==="function"&&cdT)cancelCd();
   running=true;document.body.classList.add("on","started");$("start").textContent="■ Detener";
-  msg.textContent="";labels();prepNative();startRec();wake();
+  msg.textContent="";labels();prepNative();wake();
+  if(micSel.value)await openMic();
+  startRec();
 }
 function stop(){
   running=false;if(rec){rec.onend=null;try{rec.stop()}catch{}}
+  if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}
   document.body.classList.remove("on");$("start").textContent="▶ Iniciar";labels();wake();
 }
 function restart(){
