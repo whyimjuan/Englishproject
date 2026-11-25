@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caroling Chill Festival · Traducción en vivo</title>
+<link rel="icon" href="logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0e1a4f;--navy2:#1c2b78;--aqua:#7fd6dc;--gold:#f2c230;--red:#ff4d5e;--size:56px}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--navy);color:#fff;font-family:Nunito,system-ui,sans-serif;overflow:hidden}
+#snow,#hills{position:fixed;inset:0;pointer-events:none;z-index:0}
+#hills{top:auto;height:22vh;width:100%}
+.layer{position:fixed;inset:0;z-index:1}
+
+/* --- Pantalla de espera --- */
+#welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.6vh;padding-bottom:8vh;text-align:center;transition:opacity .5s}
+#welcome img{width:clamp(110px,22vh,200px);height:clamp(110px,22vh,200px);object-fit:cover;border-radius:22%;box-shadow:0 0 0 4px var(--gold),0 18px 40px rgba(0,0,0,.35)}
+.pre{font-size:clamp(16px,2.6vh,22px);font-weight:600;letter-spacing:.02em;color:var(--aqua)}
+.big-title{font-family:"Mountains of Christmas",cursive;font-weight:700;font-size:clamp(48px,13vh,128px);line-height:.95;color:var(--gold);text-shadow:0 6px 30px rgba(0,0,0,.35);padding:0 4vw}
+.sub{font-size:clamp(18px,3.4vh,30px);font-weight:600;opacity:.85}
+
+/* --- Pantalla en vivo --- */
+#live-screen{opacity:0;pointer-events:none;transition:opacity .5s}
+body.on #welcome{opacity:0;pointer-events:none}
+body.on #live-screen,body.started #live-screen{opacity:1;pointer-events:auto}
+body.started #welcome{opacity:0;pointer-events:none}
+header{position:absolute;top:3.5vh;left:4vw;right:4vw;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:18px}
+.brand img{width:clamp(56px,11vh,96px);height:clamp(56px,11vh,96px);object-fit:cover;border-radius:22%;box-shadow:0 0 0 3px var(--gold)}
+.brand .pre{font-size:clamp(13px,2vh,17px)}
+.brand .t{font-family:"Mountains of Christmas",cursive;font-weight:700;font-size:clamp(30px,6.2vh,56px);line-height:1;color:var(--gold)}
+.pill{display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);font-size:clamp(14px,2.2vh,18px);font-weight:600;white-space:nowrap}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--aqua)}
+body.on .dot{background:var(--red);animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,77,94,.6)}70%{box-shadow:0 0 0 12px rgba(255,77,94,0)}100%{box-shadow:0 0 0 0 rgba(255,77,94,0)}}
+main{position:absolute;left:6vw;right:6vw;top:20vh;bottom:15vh;display:flex;flex-direction:column;justify-content:flex-end;gap:2.2vh}
+#history{display:flex;flex-direction:column;gap:1.2vh;opacity:.55;overflow:hidden}
+.line{font-size:calc(var(--size)*.46);font-weight:600;line-height:1.2}
+.rule{height:2px;width:96px;background:var(--gold);border-radius:2px;flex:none}
+#orig{font-size:calc(var(--size)*.43);font-weight:600;line-height:1.3;color:var(--aqua);min-height:1.3em}
+#live{font-size:var(--size);font-weight:800;line-height:1.1;text-wrap:balance;min-height:1.1em;text-shadow:0 4px 24px rgba(0,0,0,.4)}
+#live.interim{opacity:.85}
+body.hide-orig #orig{display:none}
+
+/* --- Controles --- */
+nav{position:fixed;left:0;right:0;margin:0 auto;width:fit-content;bottom:2.5vh;z-index:3;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;padding:8px;border-radius:16px;background:rgba(10,18,58,.86);border:1px solid rgba(255,255,255,.14);max-width:96vw;transition:opacity .4s}
+body.idle nav{opacity:0;pointer-events:none}
+button,select{font:600 15px Nunito,sans-serif;min-height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;padding:0 14px;cursor:pointer}
+select option{color:#111}
+button:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#start{background:var(--red);border-color:var(--red);font-weight:800;padding:0 20px}
+.sq{width:44px;padding:0}
+#msg{position:fixed;top:1.5vh;left:50%;transform:translateX(-50%);z-index:4;color:var(--gold);font-weight:600;font-size:15px;text-align:center;max-width:90vw}
+@media (prefers-reduced-motion:reduce){#snow{display:none}body.on .dot{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="snow"></canvas>
+<svg id="hills" viewBox="0 0 1280 160" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M0 50 C 220 0 420 40 640 15 C 860 -10 1060 30 1280 0 L1280 160 L0 160 Z" fill="#1c2b78"/>
+  <path d="M0 95 C 260 65 520 105 760 80 C 960 60 1120 90 1280 75 L1280 160 L0 160 Z" fill="#7fd6dc" opacity=".22"/>
+</svg>
+
+<section id="welcome" class="layer">
+  <img src="logo.jpg" alt="Escudo del Instituto Tlaquepaque">
+  <div class="pre">Instituto Tlaquepaque presenta</div>
+  <div class="big-title">Caroling Chill Festival</div>
+  <div class="sub" id="welcomeSub">Subtítulos en español en vivo · Live Spanish captions</div>
+</section>
+
+<section id="live-screen" class="layer">
+  <header>
+    <div class="brand">
+      <img src="logo.jpg" alt="Escudo del Instituto Tlaquepaque">
+      <div><div class="pre">Instituto Tlaquepaque presenta</div><div class="t">Caroling Chill Festival</div></div>
+    </div>
+    <div class="pill"><span class="dot"></span><span id="stxt">En pausa</span></div>
+  </header>
+  <main>
+    <div id="history"></div>
+    <div class="rule"></div>
+    <div id="orig"></div>
+    <div id="live"></div>
+  </main>
+</section>
+
+<div id="msg" role="status"></div>
+
+<nav aria-label="Controles">
+  <button id="start">▶ Iniciar</button>
+  <select id="from" aria-label="Idioma que se habla"></select>
+  <button id="swap" class="sq" aria-label="Invertir idiomas">⇄</button>
+  <select id="to" aria-label="Idioma en pantalla"></select>
+  <button id="smaller" class="sq" aria-label="Letra más chica">A−</button>
+  <button id="bigger" class="sq" aria-label="Letra más grande">A+</button>
+  <button id="toggleOrig">Ocultar original</button>
+  <button id="clear">Limpiar</button>
+  <button id="fs">Pantalla completa</button>
+</nav>
+
+<script>
+{
+const LANGS=[["en-US","en","Inglés","English"],["es-MX","es","Español","Spanish"],["fr-FR","fr","Francés","French"],["pt-BR","pt","Portugués","Portuguese"],["de-DE","de","Alemán","German"],["it-IT","it","Italiano","Italian"]];
+const $=id=>document.getElementById(id);
+const from=$("from"),to=$("to"),live=$("live"),orig=$("orig"),hist=$("history"),msg=$("msg");
+const opts=LANGS.map(([s,,n])=>`<option value="${s}">${n}</option>`).join("");
+from.innerHTML=opts;to.innerHTML=opts;
+const store={get(k,d){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
+from.value=store.get("tr_from","en-US");to.value=store.get("tr_to","es-MX");
+let size=+store.get("tr_size",56);
+const setSize=()=>{size=Math.max(28,Math.min(140,size));document.documentElement.style.setProperty("--size",size+"px");store.set("tr_size",size)};
+setSize();
+const lang=sel=>LANGS.find(l=>l[0]===sel.value);
+const code=sel=>lang(sel)[1];
+function labels(){
+  const f=lang(from),t=lang(to);
+  $("welcomeSub").textContent=`Subtítulos en ${t[2].toLowerCase()} en vivo · Live ${t[3]} captions`;
+  $("stxt").textContent=(running?"En vivo":"En pausa")+` · ${f[2]} → ${t[2]}`;
+}
+
+/* ---------- Traducción: Chrome integrado → Google → MyMemory ---------- */
+let native=null,nativeKey="";
+const cache=new Map();
+async function prepNative(){
+  const key=code(from)+">"+code(to);
+  if(nativeKey===key)return;
+  native=null;nativeKey=key;
+  if(code(from)===code(to)||!("Translator" in self))return;
+  try{
+    const a=await Translator.availability({sourceLanguage:code(from),targetLanguage:code(to)});
+    if(a==="unavailable")return;
+    native=await Translator.create({sourceLanguage:code(from),targetLanguage:code(to),
+      monitor(m){m.addEventListener("downloadprogress",e=>{msg.textContent="Descargando modelo de traducción… "+Math.round(e.loaded*100)+"%";if(e.loaded>=1)msg.textContent=""})}});
+  }catch(e){native=null}
+}
+async function translate(text){
+  text=text.trim();if(!text)return"";
+  const s=code(from),t=code(to);
+  if(s===t)return text;
+  const k=s+t+text;if(cache.has(k))return cache.get(k);
+  let out="";
+  if(native){try{out=await native.translate(text)}catch{}}
+  if(!out){try{
+    const r=await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${s}&tl=${t}&dt=t&q=${encodeURIComponent(text)}`);
+    const j=await r.json();out=j[0].map(x=>x[0]).join("");
+  }catch{}}
+  if(!out){try{
+    const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${s}|${t}`);
+    const j=await r.json();out=j.responseData.translatedText||"";
+  }catch{}}
+  if(!out){msg.textContent="No se pudo traducir: revisa la conexión a internet.";return text}
+  msg.textContent="";
+  cache.set(k,out);if(cache.size>400)cache.delete(cache.keys().next().value);
+  return out;
+}
+
+/* ---------- Reconocimiento de voz ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,running=false,interimTimer=null,lastInterim="",seq=0,prevO="",prevT="";
+if(!SR)msg.textContent="Este navegador no reconoce voz. Abre la página en Google Chrome o Microsoft Edge (computadora).";
+function addHistory(tr){
+  const d=document.createElement("div");d.className="line";d.textContent=tr;
+  hist.appendChild(d);while(hist.children.length>2)hist.firstChild.remove();
+}
+function show(o,tr,interim){orig.textContent=o?`“${o}”`:"";live.textContent=tr;live.classList.toggle("interim",!!interim)}
+function startRec(){
+  if(!SR)return;
+  rec=new SR();rec.lang=from.value;rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
+  rec.onresult=async e=>{
+    let interim="";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const r=e.results[i],txt=r[0].transcript;
+      if(r.isFinal){
+        clearTimeout(interimTimer);lastInterim="";++seq;
+        const tr=await translate(txt);
+        if(prevT)addHistory(prevT);
+        show(txt,tr,false);prevO=txt;prevT=tr;
+      }else interim+=txt;
+    }
+    if(interim){
+      orig.textContent=`“${interim}”`;
+      lastInterim=interim;clearTimeout(interimTimer);
+      interimTimer=setTimeout(async()=>{const q=lastInterim,my=seq;const tr=await translate(q);if(my===seq&&q===lastInterim)show(q,tr,true)},450);
+    }
+  };
+  rec.onerror=e=>{
+    if(e.error==="not-allowed"||e.error==="service-not-allowed"){msg.textContent="Permiso de micrófono denegado. Actívalo en el candado de la barra de direcciones.";stop()}
+    else if(e.error==="network")msg.textContent="Sin conexión con el servicio de voz; reintentando…";
+  };
+  rec.onend=()=>{if(running)setTimeout(()=>{try{startRec()}catch{}},250)};
+  try{rec.start()}catch{}
+}
+function start(){
+  if(!SR)return;
+  running=true;document.body.classList.add("on","started");$("start").textContent="■ Detener";
+  msg.textContent="";labels();prepNative();startRec();wake();
+}
+function stop(){
+  running=false;if(rec){rec.onend=null;try{rec.stop()}catch{}}
+  document.body.classList.remove("on");$("start").textContent="▶ Iniciar";labels();wake();
+}
+function restart(){
+  store.set("tr_from",from.value);store.set("tr_to",to.value);cache.clear();nativeKey="";labels();
+  if(running){if(rec){rec.onend=null;try{rec.stop()}catch{}}prepNative();startRec()}
+}
+
+$("start").onclick=()=>running?stop():start();
+from.onchange=restart;to.onchange=restart;
+$("swap").onclick=()=>{const a=from.value;from.value=to.value;to.value=a;restart()};
+$("bigger").onclick=()=>{size+=4;setSize()};
+$("smaller").onclick=()=>{size-=4;setSize()};
+$("toggleOrig").onclick=()=>{const h=document.body.classList.toggle("hide-orig");$("toggleOrig").textContent=h?"Mostrar original":"Ocultar original"};
+$("clear").onclick=()=>{hist.innerHTML="";orig.textContent="";live.textContent="";prevO=prevT="";if(!running)document.body.classList.remove("started")};
+$("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch{}};
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="SELECT")return;
+  if(e.code==="Space"){e.preventDefault();running?stop():start()}
+  else if(e.key==="+"||e.key==="="){size+=4;setSize()}
+  else if(e.key==="-"){size-=4;setSize()}
+  else if(e.key==="f"||e.key==="F")$("fs").click();
+});
+/* ocultar controles tras 4 s sin mover el mouse */
+let idleT;function wake(){document.body.classList.remove("idle");clearTimeout(idleT);idleT=setTimeout(()=>document.body.classList.add("idle"),4000)}
+["mousemove","keydown","touchstart","click"].forEach(ev=>addEventListener(ev,wake));wake();
+labels();
+
+/* ---------- Nieve ---------- */
+const cv=$("snow"),cx=cv.getContext("2d");let flakes=[];
+function resize(){cv.width=innerWidth;cv.height=innerHeight;flakes=Array.from({length:Math.round(innerWidth/16)},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*2.4+.6,s:Math.random()*.5+.2,w:Math.random()*Math.PI*2}))}
+const snowRO=new ResizeObserver(resize);snowRO.observe(document.body);
+(function tick(){cx.clearRect(0,0,cv.width,cv.height);cx.fillStyle="rgba(255,255,255,.5)";
+  for(const f of flakes){f.y+=f.s;f.w+=.01;f.x+=Math.sin(f.w)*.3;if(f.y>cv.height){f.y=-5;f.x=Math.random()*cv.width}
+    cx.beginPath();cx.arc(f.x,f.y,f.r,0,7);cx.fill()}
+  requestAnimationFrame(tick)})();
+}
+</script>
+</body>
+</html>
