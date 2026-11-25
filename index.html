@@ -8,12 +8,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-:root{--navy:#0e1a4f;--navy2:#1c2b78;--aqua:#7fd6dc;--gold:#f2c230;--red:#ff4d5e;--size:56px}
+:root{--navy:#060c2e;--navy2:#16236a;--aqua:#8ee6ec;--gold:#ffd23f;--red:#ff4d5e;--scale:1;--size:calc(min(7.4vw,12vh)*var(--scale))}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--navy);color:#fff;font-family:Nunito,system-ui,sans-serif;overflow:hidden}
 #snow,#hills{position:fixed;inset:0;pointer-events:none;z-index:0}
-#hills{top:auto;height:22vh;width:100%}
+#hills{top:auto;height:9vh;width:100%;opacity:.8}
 .layer{position:fixed;inset:0;z-index:1}
 
 /* --- Pantalla de espera --- */
@@ -28,27 +28,27 @@ body{background:var(--navy);color:#fff;font-family:Nunito,system-ui,sans-serif;o
 body.on #welcome{opacity:0;pointer-events:none}
 body.on #live-screen,body.started #live-screen{opacity:1;pointer-events:auto}
 body.started #welcome{opacity:0;pointer-events:none}
-header{position:absolute;top:3.5vh;left:4vw;right:4vw;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+header{position:absolute;top:2.5vh;left:4vw;right:4vw;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:18px}
-.brand img{width:clamp(56px,11vh,96px);height:clamp(56px,11vh,96px);object-fit:cover;border-radius:22%;box-shadow:0 0 0 3px var(--gold)}
+.brand img{width:clamp(48px,9vh,90px);height:clamp(48px,9vh,90px);object-fit:cover;border-radius:22%;box-shadow:0 0 0 3px var(--gold)}
 .brand .pre{font-size:clamp(13px,2vh,17px)}
-.brand .t{font-family:"Mountains of Christmas",cursive;font-weight:700;font-size:clamp(30px,6.2vh,56px);line-height:1;color:var(--gold)}
+.brand .t{font-family:"Mountains of Christmas",cursive;font-weight:700;font-size:clamp(26px,5vh,52px);line-height:1;color:var(--gold)}
 .pill{display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);font-size:clamp(14px,2.2vh,18px);font-weight:600;white-space:nowrap}
 .dot{width:12px;height:12px;border-radius:50%;background:var(--aqua)}
 body.on .dot{background:var(--red);animation:pulse 1.4s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,77,94,.6)}70%{box-shadow:0 0 0 12px rgba(255,77,94,0)}100%{box-shadow:0 0 0 0 rgba(255,77,94,0)}}
-main{position:absolute;left:6vw;right:6vw;top:20vh;bottom:15vh;display:flex;flex-direction:column;justify-content:flex-end;gap:2.2vh}
-#history{display:flex;flex-direction:column;gap:1.2vh;opacity:.55;overflow:hidden}
-.line{font-size:calc(var(--size)*.46);font-weight:600;line-height:1.2}
+main{position:absolute;left:4vw;right:4vw;top:15vh;bottom:9vh;display:flex;flex-direction:column;justify-content:center;gap:2vh}
+#history{display:flex;flex-direction:column;gap:1vh;opacity:.6;overflow:hidden;flex:none}
+.line{font-size:calc(var(--size)*.5);font-weight:700;line-height:1.15}
 .rule{height:2px;width:96px;background:var(--gold);border-radius:2px;flex:none}
-#orig{font-size:calc(var(--size)*.43);font-weight:600;line-height:1.3;color:var(--aqua);min-height:1.3em}
-#live{font-size:var(--size);font-weight:800;line-height:1.1;text-wrap:balance;min-height:1.1em;text-shadow:0 4px 24px rgba(0,0,0,.4)}
+#orig{font-size:calc(var(--size)*.45);font-weight:700;line-height:1.3;color:var(--aqua);min-height:1.3em}
+#live{font-size:var(--size);font-weight:800;line-height:1.08;text-wrap:balance;min-height:1.1em;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.5)}
 #live.interim{opacity:.85}
 body.hide-orig #orig{display:none}
 
 /* --- Controles --- */
 nav{position:fixed;left:0;right:0;margin:0 auto;width:fit-content;bottom:2.5vh;z-index:3;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;padding:8px;border-radius:16px;background:rgba(10,18,58,.86);border:1px solid rgba(255,255,255,.14);max-width:96vw;transition:opacity .4s}
-body.idle nav{opacity:0;pointer-events:none}
+body.idle nav,body.idle #msg{opacity:0;pointer-events:none}
 button,select{font:600 15px Nunito,sans-serif;min-height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;padding:0 14px;cursor:pointer}
 select option{color:#111}
 button:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -111,8 +111,8 @@ const opts=LANGS.map(([s,,n])=>`<option value="${s}">${n}</option>`).join("");
 from.innerHTML=opts;to.innerHTML=opts;
 const store={get(k,d){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
 from.value=store.get("tr_from","en-US");to.value=store.get("tr_to","es-MX");
-let size=+store.get("tr_size",56);
-const setSize=()=>{size=Math.max(28,Math.min(140,size));document.documentElement.style.setProperty("--size",size+"px");store.set("tr_size",size)};
+let size=+store.get("tr_scale",1)||1;
+const setSize=()=>{size=Math.round(Math.max(.5,Math.min(1.6,size))*10)/10;document.documentElement.style.setProperty("--scale",size);store.set("tr_scale",size)};
 setSize();
 const lang=sel=>LANGS.find(l=>l[0]===sel.value);
 const code=sel=>lang(sel)[1];
@@ -134,7 +134,7 @@ async function prepNative(){
     const a=await Translator.availability({sourceLanguage:code(from),targetLanguage:code(to)});
     if(a==="unavailable")return;
     native=await Translator.create({sourceLanguage:code(from),targetLanguage:code(to),
-      monitor(m){m.addEventListener("downloadprogress",e=>{msg.textContent="Descargando modelo de traducción… "+Math.round(e.loaded*100)+"%";if(e.loaded>=1)msg.textContent=""})}});
+      monitor(){}});
   }catch(e){native=null}
 }
 async function translate(text){
@@ -164,7 +164,7 @@ let rec=null,running=false,interimTimer=null,lastInterim="",seq=0,prevO="",prevT
 if(!SR)msg.textContent="Este navegador no reconoce voz. Abre la página en Google Chrome o Microsoft Edge (computadora).";
 function addHistory(tr){
   const d=document.createElement("div");d.className="line";d.textContent=tr;
-  hist.appendChild(d);while(hist.children.length>2)hist.firstChild.remove();
+  hist.appendChild(d);while(hist.children.length>1)hist.firstChild.remove();
 }
 function show(o,tr,interim){orig.textContent=o?`“${o}”`:"";live.textContent=tr;live.classList.toggle("interim",!!interim)}
 function startRec(){
@@ -175,13 +175,14 @@ function startRec(){
     for(let i=e.resultIndex;i<e.results.length;i++){
       const r=e.results[i],txt=r[0].transcript;
       if(r.isFinal){
+        if(txt.trim().length<4)continue;
         clearTimeout(interimTimer);lastInterim="";++seq;
         const tr=await translate(txt);
         if(prevT)addHistory(prevT);
         show(txt,tr,false);prevO=txt;prevT=tr;
       }else interim+=txt;
     }
-    if(interim){
+    if(interim.trim().length>3){
       orig.textContent=`“${interim}”`;
       lastInterim=interim;clearTimeout(interimTimer);
       interimTimer=setTimeout(async()=>{const q=lastInterim,my=seq;const tr=await translate(q);if(my===seq&&q===lastInterim)show(q,tr,true)},450);
@@ -211,16 +212,16 @@ function restart(){
 $("start").onclick=()=>running?stop():start();
 from.onchange=restart;to.onchange=restart;
 $("swap").onclick=()=>{const a=from.value;from.value=to.value;to.value=a;restart()};
-$("bigger").onclick=()=>{size+=4;setSize()};
-$("smaller").onclick=()=>{size-=4;setSize()};
+$("bigger").onclick=()=>{size+=.1;setSize()};
+$("smaller").onclick=()=>{size-=.1;setSize()};
 $("toggleOrig").onclick=()=>{const h=document.body.classList.toggle("hide-orig");$("toggleOrig").textContent=h?"Mostrar original":"Ocultar original"};
 $("clear").onclick=()=>{hist.innerHTML="";orig.textContent="";live.textContent="";prevO=prevT="";if(!running)document.body.classList.remove("started")};
 $("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch{}};
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="SELECT")return;
   if(e.code==="Space"){e.preventDefault();running?stop():start()}
-  else if(e.key==="+"||e.key==="="){size+=4;setSize()}
-  else if(e.key==="-"){size-=4;setSize()}
+  else if(e.key==="+"||e.key==="="){size+=.1;setSize()}
+  else if(e.key==="-"){size-=.1;setSize()}
   else if(e.key==="f"||e.key==="F")$("fs").click();
 });
 /* ocultar controles tras 4 s sin mover el mouse */
